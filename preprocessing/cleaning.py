@@ -4,7 +4,7 @@ from feature import *
 # from feature import simplify_weather, hour_to_time_bucket, transform_distance, wind_direction_mapping
 
 print("loading dataset")
-df = pd.read_csv("../us_accident_severity/data/raw/US_Accidents_March23.csv")
+df = pd.read_csv("data/raw/US_Accidents_March23.csv")
 print("loaded dataset")
 
 # Compact memory: downcast numeric columns where safe
@@ -104,6 +104,7 @@ for col, strategy in dict1.items():
 
 
 df = df.dropna()
+df = df.reset_index(drop=True)
 ###print("After filling missing values:")
 ###print(df.isna().sum())
 ###print(df.isna().mean())
@@ -137,7 +138,8 @@ df = transform_distance(df)
 # dropping original columns after feature engineering 
 # Start_Time,Weather_Condition, Distance(mi)
 df = df.drop(columns=["Start_Time", "Weather_Condition", "Distance(mi)", "Wind_Direction"])
-
+df = df.dropna()
+df = df.reset_index(drop=True)
 
 # one hot encoding
 # df = pd.get_dummies(df, drop_first=True)
@@ -164,6 +166,6 @@ print(df.columns)
 
 
 ###print(df.columns)
-df.to_parquet("../us_accident_severity/data/processed/US_Accidents_Cleaned.parquet", engine="pyarrow", compression="snappy")
-# df.to_csv("../us_accident_severity/data/processed/US_Accidents_Cleaned.csv", index=False)
+df.to_parquet("data/processed/US_Accidents_Cleaned.parquet", engine="pyarrow", compression="snappy")
+# df.to_csv("data/processed/US_Accidents_Cleaned.csv", index=False)
 print("success")
