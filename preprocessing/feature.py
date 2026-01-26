@@ -76,9 +76,9 @@ def wind_direction_mapping(direction: str) -> str:
         return 'W'
     elif direction in ['NE', 'SE', 'SW', 'NW']:
         return direction
-    elif "calm" in direction.lower():
+    elif "CALM" in direction:
         return 'CALM'
-    elif "var" in direction.lower():
+    elif "VAR" in direction:
         return 'VAR'
     else:
         return 'MISSING'

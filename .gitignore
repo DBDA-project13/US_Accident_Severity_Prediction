@@ -13,6 +13,7 @@ data/
 *.csv
 # Models
 model/
+models/
 
 # Jupyter
 .ipynb_checkpoints/
