@@ -1,7 +1,6 @@
 import numpy as np # type: ignore
 import pandas as pd # type: ignore
 
-
 # Feature Engineering
 def simplify_weather(cond: str) -> str:
     """
@@ -82,3 +81,25 @@ def wind_direction_mapping(direction: str) -> str:
         return 'VAR'
     else:
         return 'MISSING'
+    
+
+def month_to_season(month):
+    """
+    month to Season
+    """
+    if month in [12, 1, 2]:
+        return "winter"
+    elif month in [3, 4, 5]:
+        return "spring"
+    elif month in [6, 7, 8]:
+        return "summer"
+    elif month in [9, 10, 11]:
+        return "fall"
+    else:
+        return month
+    
+def is_rushhour(hour):
+    if hour in [7, 8, 9, 16, 17, 18, 19]:
+        return True
+    else:
+        return False

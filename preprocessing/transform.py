@@ -9,34 +9,51 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
 # --- CONFIGURATION ---
-DATA_PATH = "data/processed/US_Accidents_Cleaned.parquet"
-ARTIFACTS_DIR = "preprocessing/"
-PROCESSED_DATA_DIR = "data/training_ready/" # Where we save ready-to-train data
+# DATA_PATH = "data/processed/US_Accidents_Cleaned.parquet"
+DATA_PATH = "data/processed/US_Accidents_Processed.parquet"
+ARTIFACTS_DIR = "preprocessing/new/"
+PROCESSED_DATA_DIR = "data/new/training_ready/" # Where we save ready-to-train data
 
-# Columns definitions
-NUMERIC_FEATURES = [
-    "Temperature(F)", "Humidity(%)", "Pressure(in)", "Visibility(mi)", 
-    "Wind_Speed(mph)", "Start_Lat", "Start_Lng", "hour", "day", "month", 
-    "Distance(mi)_capped", "Distance(mi)_log"
-]
-
-# We treat booleans as numeric (0/1) or categorical? 
-# Usually Scikit-learn treats bools as numeric 0/1 automatically, 
-# but OHE is safer if you want explicit handling. Let's keep them as pass-through (already 0/1).
-BOOL_FEATURES = [
-    "Amenity", "Bump", "Crossing", "Give_Way", "Junction", "No_Exit", 
-    "Railway", "Roundabout", "Station", "Stop", "Traffic_Calming", "Traffic_Signal"
-]
-
-CATEGORICAL_FEATURES = [
-    "State", "Weather_Simple", "Wind_Direction_Simple", "time_bucket", "Distance(mi)_bin"
-]
+# NUMERIC_FEATURES = ['Start_Lat', 'Start_Lng', 'Temperature_F', 'Humidity_%', 'Pressure_in', 'Visibility_mi', 'Wind_Speed_mph', 'hour', 'day', 'month', 'dayofweek', 'Distance_capped', 'Distance_log', 'Distance_bin_index']
+NUMERIC_FEATURES = ['Start_Lat', 'Start_Lng', 'Temperature(F)', 'Humidity(%)', 'Pressure(in)', 'Visibility(mi)', 'Wind_Speed(mph)',
+                     'hour', 'day', 'month', 'dayofweek', 'Distance(mi)_capped', 'Distance(mi)_log']
+BOOL_FEATURES = ['Amenity', 'Crossing', 'Give_Way', 'Junction', 'No_Exit', 'Railway', 'Station', 'Stop', 'Traffic_Signal', 'is_rushhour', 'is_holiday']
+CATEGORICAL_FEATURES = ['State', 'Weather_Simple', 'Wind_Direction_Simple', 'time_bucket', 'Distance(mi)_bin', 'season']
 
 TARGET = "Severity"
+
+# Columns definitions
+# NUMERIC_FEATURES = [
+#     "Temperature(F)", "Humidity(%)", "Pressure(in)", "Visibility(mi)", 
+#     "Wind_Speed(mph)", "Start_Lat", "Start_Lng", "hour", "day", "month", 
+#     "Distance(mi)_capped", "Distance(mi)_log"
+# ]
+
+# # We treat booleans as numeric (0/1) or categorical? 
+# # Usually Scikit-learn treats bools as numeric 0/1 automatically, 
+# # but OHE is safer if you want explicit handling. Let's keep them as pass-through (already 0/1).
+# BOOL_FEATURES = [
+#     "Amenity", "Bump", "Crossing", "Give_Way", "Junction", "No_Exit", 
+#     "Railway", "Roundabout", "Station", "Stop", "Traffic_Calming", "Traffic_Signal"
+# ]
+
+# CATEGORICAL_FEATURES = [
+#     "State", "Weather_Simple", "Wind_Direction_Simple", "time_bucket", "Distance(mi)_bin"
+# ]
+
+# TARGET = "Severity"
 
 def load_data():
     print(f"Loading data from {DATA_PATH}...")
     df = pd.read_parquet(DATA_PATH)
+    for col in df.select_dtypes(include=['int64']).columns:
+        df[col] = pd.to_numeric(df[col], downcast='integer')
+
+    for col in df.select_dtypes(include=['float64']).columns:
+        df[col] = pd.to_numeric(df[col], downcast='float')
+
+    for col in df.select_dtypes(include=['object']).columns:
+        df[col] = df[col].astype('category')
     return df
 
 def get_preprocessor():

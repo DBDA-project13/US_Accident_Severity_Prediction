@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np # type: ignore
+import holidays
+
 from feature import *
 # from feature import simplify_weather, hour_to_time_bucket, transform_distance, wind_direction_mapping
 
@@ -29,7 +31,7 @@ all_columns = ['ID', 'Source', 'Severity', 'Start_Time', 'End_Time', 'Start_Lat'
 
 not_used_columns = ['ID', 'Source', 'End_Time', 'End_Lat', 'End_Lng',
 'Description', 'Street', 'Country', 'Airport_Code', 'Weather_Timestamp',
-'County', 'Zipcode', 'Timezone', 'City','Turning_Loop']
+'County', 'Zipcode', 'Timezone', 'City','Turning_Loop', 'Traffic_Calming', 'Roundabout', 'Bump']
 
 bool_columns = ['Sunrise_Sunset', 'Civil_Twilight', 'Nautical_Twilight',
 'Astronomical_Twilight']   
@@ -129,9 +131,14 @@ df["Start_Time"] = pd.to_datetime(df["Start_Time"], errors="coerce")
 df["hour"] = df["Start_Time"].dt.hour
 df['day'] = df['Start_Time'].dt.day
 df['month'] = df['Start_Time'].dt.month
+df['dayofweek'] = df['Start_Time'].dt.dayofweek
 
 # Map hour to coarse time-of-day bucket
 df["time_bucket"] = df["hour"].apply(hour_to_time_bucket)
+df["season"] = df["month"].apply(month_to_season)
+df["is_rushhour"] = df["hour"].apply(is_rushhour)
+us_holidays = holidays.US()
+df['is_holiday'] = df['Start_Time'].dt.date.apply(lambda x: x in us_holidays)
 
 df = transform_distance(df)
 
@@ -166,6 +173,7 @@ print(df.columns)
 
 
 ###print(df.columns)
-df.to_parquet("data/processed/US_Accidents_Cleaned.parquet", engine="pyarrow", compression="snappy")
+# df.to_parquet("data/processed/US_Accidents_Cleaned.parquet", engine="pyarrow", compression="snappy")
+df.to_parquet("data/processed/US_Accidents_Processed.parquet", engine="pyarrow", compression="snappy")
 # df.to_csv("data/processed/US_Accidents_Cleaned.csv", index=False)
 print("success")
