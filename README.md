@@ -47,7 +47,7 @@ us_accident_severity/
 | LightGBM (baseline) | 0.409    | 0.654       | 0.821          | 398           | 70.25               |
 | LightGBM (tuned)    | 0.454    | 0.710       | 0.820          | 1153          | 435.34              |
 | CatBoost (tuned)    | 0.401    | 0.641       | 0.824          | 3774          | **2.70**            |
-| **XGBoost (tuned)** | **0.489** | **0.746**   | 0.791          | 1402          | 114.38              |
+| **XGBoost (tuned)** | **0.503** | **0.755**   | 0.792         | 1436           | 99.77              |
 
 **Dataset:** ~6.8M rows, highly imbalanced multiclass target (Severity 1–4)
 
