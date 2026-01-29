@@ -5,16 +5,15 @@ import joblib
 import requests
 from datetime import datetime
 import os
+import zipfile
 import folium
 from streamlit_folium import st_folium
-# import streamlit as st
-# import pandas as pd
-# import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import seaborn as sns
-# import folium
+from functools import lru_cache
+import time
 from folium.plugins import HeatMap
 from streamlit_folium import folium_static
 from streamlit_extras.add_vertical_space import add_vertical_space
@@ -72,7 +71,10 @@ def set_page(page_name):
 @st.cache_resource
 def load_model():
     try:
-        model = joblib.load('model.pkl')
+        with zipfile.ZipFile("model.pkl.zip", "r") as z:
+            with z.open("model.pkl") as file:
+                model = joblib.load(file)
+        # model = joblib.load('model.pkl')
         preprocessor = joblib.load('preprocessing/new/preprocessor.pkl')
         return model, preprocessor
     except Exception as e:
@@ -569,40 +571,60 @@ def show_dashboard_page():
                          min_opacity=0.2, radius=15, blur=15)
         map.add_child(heatmap)
         folium_static(map)
-# Dashboard Page
-# def show_dashboard_page():
-#     st.markdown('<p class="main-header">📊 Accident Analysis Dashboard</p>', unsafe_allow_html=True)
-    
-#     if st.button("← Back to Home"):
-#         set_page('home')
-    
-#     st.markdown("---")
-    
-#     # Load your existing dashboard here
-#     # This is a placeholder - replace with your actual dashboard code
-#     st.info("📌 Your existing dashboard will be integrated here.")
-    
-#     st.markdown("""
-#     ### Dashboard Features:
-#     - Accident distribution by severity
-#     - Geographic heatmaps
-#     - Temporal patterns analysis
-#     - Weather impact visualization
-#     - State-wise statistics
-#     """)
-    
-#     # Example visualizations (replace with your actual dashboard)
-#     col1, col2, col3 = st.columns(3)
-    
-#     with col1:
-#         st.metric("Total Accidents", "2.8M", "+5%")
-    
-#     with col2:
-#         st.metric("Avg Severity", "2.1", "-0.2")
-    
-#     with col3:
-#         st.metric("High Severity", "22K", "+12%")
 
+@lru_cache(maxsize=100)
+def get_state_from_coords(lat, lon):
+    """
+    Extract state from coordinates using Nominatim reverse geocoding
+    """
+    try:
+        url = f"https://nominatim.openstreetmap.org/reverse"
+        params = {
+            'lat': lat,
+            'lon': lon,
+            'format': 'json',
+            'addressdetails': 1
+        }
+        headers = {'User-Agent': 'AccidentSeverityApp/1.0'}
+        
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Extract state from address components
+        address = data.get('address', {})
+        state = address.get('state', '')
+        
+        # Convert full state name to abbreviation if needed
+        state_abbrev = get_state_abbreviation(state)
+        
+        return state_abbrev if state_abbrev else state
+        
+    except Exception as e:
+        st.warning(f"Could not determine state from coordinates: {e}")
+        return "Unknown"
+
+# ----------------------------- 
+# State Abbreviation Mapping
+# ----------------------------- 
+def get_state_abbreviation(state_name):
+    """Convert full state name to 2-letter abbreviation"""
+    state_map = {
+        'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR',
+        'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE',
+        'Florida': 'FL', 'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID',
+        'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS',
+        'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+        'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS',
+        'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV',
+        'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY',
+        'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH', 'Oklahoma': 'OK',
+        'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+        'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT',
+        'Vermont': 'VT', 'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV',
+        'Wisconsin': 'WI', 'Wyoming': 'WY', 'District of Columbia': 'DC'
+    }
+    return state_map.get(state_name, None)
 # Prediction Page
 def show_prediction_page():
     st.markdown('<p class="main-header">🔮 Accident Severity Prediction</p>', unsafe_allow_html=True)
@@ -626,23 +648,39 @@ def show_prediction_page():
     
     with col1:
         st.subheader("📍 Location Information")
-        
-        # State selection
-        states = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 
-                 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
-                 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
-                 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
-                 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY']
-        state = st.selectbox("State", states, index=4)  # Default to CA
-        
         latitude = st.number_input("Latitude", value=34.0522, min_value=24.0, max_value=50.0, step=0.0001, format="%.4f")
         longitude = st.number_input("Longitude", value=-118.2437, min_value=-125.0, max_value=-66.0, step=0.0001, format="%.4f")
-        
-        # Map to show location
+
+        # Display the map
         st.markdown("**Location Preview:**")
         m = folium.Map(location=[latitude, longitude], zoom_start=13)
-        folium.Marker([latitude, longitude], popup="Accident Location", icon=folium.Icon(color='red')).add_to(m)
-        st_folium(m, width=350, height=300)
+
+        # Function to update coordinates based on a click
+        def update_coordinates(click):
+            global latitude, longitude
+            latitude, longitude = click['lat'], click['lng']
+            st.session_state['latitude'] = latitude
+            st.session_state['longitude'] = longitude
+
+        # Initial marker
+        marker = folium.Marker([latitude, longitude], popup="Accident Location", icon=folium.Icon(color='red'))
+        marker.add_to(m)
+
+        # Add LatLngPopup to show coordinates on click
+        latlng_popup = folium.LatLngPopup().add_to(m)
+
+        # Use Streamlit callback to handle the interaction
+        map_data = st_folium(m, width=350, height=300)
+        # st.markdown(type(latlng_popup))
+
+        if map_data and 'lat' in map_data and 'lng' in map_data:
+            update_coordinates(map_data)
+
+        # Update state based on coordinates
+        state = get_state_from_coords(lat=latitude, lon=longitude)
+
+        # Display the updated state
+        st.markdown(f"**Selected State:** {state}")
         
         distance = st.number_input("Distance (miles)", value=0.5, min_value=0.0, max_value=50.0, step=0.1)
     
