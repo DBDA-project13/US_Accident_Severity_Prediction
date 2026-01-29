@@ -7,6 +7,17 @@ from datetime import datetime
 import os
 import folium
 from streamlit_folium import st_folium
+# import streamlit as st
+# import pandas as pd
+# import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+import seaborn as sns
+# import folium
+from folium.plugins import HeatMap
+from streamlit_folium import folium_static
+from streamlit_extras.add_vertical_space import add_vertical_space
 
 # Page configuration
 st.set_page_config(
@@ -310,39 +321,287 @@ def show_home_page():
         The model uses XGBoost trained on millions of US accident records to provide accurate severity predictions.
         """)
 
-# Dashboard Page
+
 def show_dashboard_page():
-    st.markdown('<p class="main-header">📊 Accident Analysis Dashboard</p>', unsafe_allow_html=True)
+    """Main dashboard display function"""
     
-    if st.button("← Back to Home"):
-        set_page('home')
+    # Tableau Dashboard Section
+    st.markdown("## 📊 Tableau Dashboard")
+    add_vertical_space(2)
     
-    st.markdown("---")
+    # Embed Tableau dashboard
+    # tableau_url = st.text_input("Enter your Tableau Public/Server URL:", 
+                            #    placeholder="https://public.tableau.com/app/profile/anshul.aher/viz/CDAC_PROJECT_17691643176930/ProjectStory?publish=yes")
+    # tableau_url = "https://public.tableau.com/app/profile/anshul.aher/viz/CDAC_PROJECT_17691643176930/ProjectStory?publish=yes"
+    tableau_html = """
+    <div class='tableauPlaceholder' id='viz1769690834638' style='position: relative'>
+        <noscript><a href='#'><img alt=' ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;CD&#47;CDAC_PROJECT_17691643176930&#47;ProjectStory&#47;1_rss.png' style='border: none' /></a></noscript>
+        <object class='tableauViz' style='display:none;'>
+            <param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' />
+            <param name='embed_code_version' value='3' />
+            <param name='site_root' value='' />
+            <param name='name' value='CDAC_PROJECT_17691643176930&#47;ProjectStory' />
+            <param name='tabs' value='yes' />
+            <param name='toolbar' value='yes' />
+            <param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;CD&#47;CDAC_PROJECT_17691643176930&#47;ProjectStory&#47;1.png' />
+            <param name='animate_transition' value='yes' />
+            <param name='display_static_image' value='yes' />
+            <param name='display_spinner' value='yes' />
+            <param name='display_overlay' value='yes' />
+            <param name='display_count' value='yes' />
+            <param name='language' value='en-GB' />
+            <param name='filter' value='publish=yes' />
+        </object>
+    </div>
+    <script type='text/javascript'>
+        var divElement = document.getElementById('viz1769690834638');
+        var vizElement = divElement.getElementsByTagName('object')[0];
+        vizElement.style.width='100%';
+        vizElement.style.height=(divElement.offsetWidth*0.75)+'px';
+        var scriptElement = document.createElement('script');
+        scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';
+        vizElement.parentNode.insertBefore(scriptElement, vizElement);
+    </script>
+    """
     
-    # Load your existing dashboard here
-    # This is a placeholder - replace with your actual dashboard code
-    st.info("📌 Your existing dashboard will be integrated here.")
+    st.components.v1.html(tableau_html, height=800, scrolling=True)
     
-    st.markdown("""
-    ### Dashboard Features:
-    - Accident distribution by severity
-    - Geographic heatmaps
-    - Temporal patterns analysis
-    - Weather impact visualization
-    - State-wise statistics
-    """)
+    # add_vertical_space(5)
+    # if tableau_url:
+    #     st.components.v1.iframe(tableau_url, height=800, scrolling=True)
+    # else:
+    #     st.info("📌 Enter your Tableau dashboard URL above to display it here")
     
-    # Example visualizations (replace with your actual dashboard)
-    col1, col2, col3 = st.columns(3)
+    add_vertical_space(5)
     
-    with col1:
-        st.metric("Total Accidents", "2.8M", "+5%")
+    # st.markdown(f"""
+    #     <div class='tableauPlaceholder' id='viz1769690834638' style='position: relative'><noscript><a href='#'><img alt=' ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;CD&#47;CDAC_PROJECT_17691643176930&#47;ProjectStory&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='CDAC_PROJECT_17691643176930&#47;ProjectStory' /><param name='tabs' value='yes' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;CD&#47;CDAC_PROJECT_17691643176930&#47;ProjectStory&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-GB' /><param name='filter' value='publish=yes' /></object></div>                <script type='text/javascript'>                    var divElement = document.getElementById('viz1769690834638');                    var vizElement = divElement.getElementsByTagName('object')[0];                    vizElement.style.width='100%';vizElement.style.height=(divElement.offsetWidth*0.75)+'px';                    var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script>
+    #     """, unsafe_allow_html=True)
     
-    with col2:
-        st.metric("Avg Severity", "2.1", "-0.2")
+    # Data Visualisations Section
+    st.markdown('# **General Data Visualisation Window**')
+    add_vertical_space(2)
+    st.markdown('##### :smile: Generalised Visualisations on the data :balloon:')
+    add_vertical_space(3)
     
-    with col3:
-        st.metric("High Severity", "22K", "+12%")
+    
+    st.markdown("### Some General Visualisations")
+    add_vertical_space(3)
+    df = pd.read_csv("US_Accidents53.csv", encoding="ISO-8859-1")
+    c1, c2 = st.columns(2)
+    with c1:
+        fig = px.box(df, x='Severity', y='Temperature(F)', color='Severity', 
+                    title='Temperature vs. Severity of Accidents')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with c2:
+        fig = px.histogram(df, x='Hour', nbins=24, color_discrete_sequence=['orange'], 
+                          labels={'Hour': 'Hour of the Day', 'count': 'Frequency'}, 
+                          title='Histogram of Accident Times')
+        fig.update_layout(xaxis_title='Hour of the Day', yaxis_title='Frequency', 
+                         title_font_size=16, showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+    
+    add_vertical_space(5)
+    
+    df['Start_Time'] = pd.to_datetime(df['Start_Time'])
+    df['Weekday'] = df['Start_Time'].dt.day_name()
+    
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown('##### Accidents by Day of the Week')
+        week_day_counts = df['Weekday'].value_counts()
+        pie_df = pd.DataFrame({'Weekday': week_day_counts.index, 'Count': week_day_counts.values})
+        fig = px.pie(pie_df, names='Weekday', values='Count', 
+                    title='Accidents by Day of the Week',
+                    color_discrete_sequence=['skyblue', 'lightgreen', 'lightcoral', 
+                                            'orange', 'lightyellow', 'lightpink', 'lightskyblue'])
+        fig.update_traces(textposition='inside', textinfo='percent+label')
+        fig.update_layout(title_font_size=16, title_font_color='purple')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with c2:
+        st.markdown('##### Wind Speed vs. Visibility')
+        fig = px.scatter(df, x='Wind_Chill(F)', y='Visibility(mi)', color='Visibility(mi)', 
+                        title='Wind Chill vs. Visibility', 
+                        labels={'Wind_Chill(F)': 'Wind Chill (F)', 'Visibility(mi)': 'Visibility (miles)'})
+        fig.update_traces(marker=dict(size=10, opacity=0.5), selector=dict(mode='markers'))
+        fig.update_layout(title_font_size=16, title_font_color='brown', showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+    
+    add_vertical_space(5)
+    
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("##### Scatter Plot of Wind Speed Vs. Visibility")
+        fig = px.scatter(df, x='Wind_Speed(mph)', y='Visibility(mi)', color='Visibility(mi)',
+                        title='Wind Speed vs. Visibility', 
+                        labels={'Wind_Speed(mph)': 'Wind Speed (mph)', 'Visibility(mi)': 'Visibility (miles)'})
+        fig.update_layout(title_font_size=16, title_font_color='blue',
+                         xaxis_title='Wind Speed (mph)', yaxis_title='Visibility (miles)',
+                         xaxis=dict(showgrid=True, gridwidth=1, gridcolor='lightgrey'),
+                         yaxis=dict(showgrid=True, gridwidth=1, gridcolor='lightgrey'))
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with c2:
+        st.markdown("##### Trends Line Chart")
+        df_time = df.copy()
+        df_time['Start_Time'] = pd.to_datetime(df_time['Start_Time'])
+        df_time.set_index('Start_Time', inplace=True)
+        monthly_accidents = df_time.resample('M').size()
+        fig = px.line(x=monthly_accidents.index, y=monthly_accidents.values,
+                     title='Accidents Over Time', labels={'x': 'Date', 'y': 'Number of Accidents'})
+        fig.update_traces(line=dict(color='hotpink', dash='dot', width=2))
+        fig.update_layout(title_font_size=16, title_font_color='hotpink',
+                         xaxis_title_font_size=12, yaxis_title_font_size=12,
+                         xaxis=dict(showgrid=True, gridwidth=1, gridcolor='lightgrey'),
+                         yaxis=dict(showgrid=True, gridwidth=1, gridcolor='lightgrey'))
+        st.plotly_chart(fig, use_container_width=True)
+    
+    add_vertical_space(5)
+    
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("##### Count Plot of Accident Severity")
+        fig = px.histogram(df, x='Severity', title='Distribution of Accident Severity', 
+                          color_discrete_sequence=['orange'], labels={'Severity': 'Severity'})
+        fig.update_layout(title_font_size=16, title_font_color='orange', 
+                         xaxis_title='Severity', yaxis_title='Count', 
+                         xaxis=dict(showgrid=False), 
+                         yaxis=dict(showgrid=True, gridwidth=1, gridcolor='lightgrey'))
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with c2:
+        st.markdown('##### Accidents by Weather Condition')
+        fig_weather = px.bar(df['Weather_Condition'].value_counts(), 
+                            orientation='h',
+                            title='Accidents by Weather Condition',
+                            labels={'value': 'Number of Accidents', 'index': 'Weather Condition'},
+                            color_discrete_sequence=['red'],
+                            height=500)
+        fig_weather.update_layout(title_font_size=16, title_font_color='red', 
+                                 yaxis_title='Weather Condition', xaxis_title='Number of Accidents')
+        st.plotly_chart(fig_weather, use_container_width=True)
+    
+    c1, c2 = st.columns(2)
+    with c1:
+        city_counts = df['City'].value_counts().head(10)
+        st.markdown('##### Top 10 Cities by Accident Counts')
+        fig_city = px.bar(city_counts, 
+                         title='Top 10 Cities by Accident Counts',
+                         labels={'value': 'Number of Accidents', 'index': 'City'},
+                         color_discrete_sequence=['purple'],
+                         height=500)
+        fig_city.update_layout(title_font_size=16, title_font_color='purple', 
+                              yaxis_title='Number of Accidents', xaxis_title='City')
+        st.plotly_chart(fig_city, use_container_width=True)
+    
+    with c2:
+        custom_palette = sns.color_palette("Set2")
+        sns.set_palette(custom_palette)
+        sns.set_style("whitegrid")
+        st.markdown('##### Distribution of Accidents by Month')
+        fig1, ax1 = plt.subplots()
+        sns.countplot(x='Month', data=df, ax=ax1)
+        ax1.set_title('Distribution of Accidents by Month')
+        ax1.set_xlabel('Month')
+        ax1.set_ylabel('Number of Accidents')
+        st.pyplot(fig1, use_container_width=True)
+    
+    add_vertical_space(5)
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        st.markdown('##### Box Plot of Log-Transformed Accident Duration')
+        df['Duration'] = (pd.to_datetime(df['End_Time']) - pd.to_datetime(df['Start_Time'])).dt.total_seconds() / 3600
+        df['Log_Duration'] = np.log1p(df['Duration'])
+        fig2, ax2 = plt.subplots()
+        sns.boxplot(x='Log_Duration', data=df, ax=ax2)
+        ax2.set_title('Box Plot of Log-Transformed Accident Duration')
+        ax2.set_xlabel('Log(Duration in Hours)')
+        st.pyplot(fig2, use_container_width=True)
+    
+    with c2:
+        st.markdown('##### Pressure vs. Humidity')
+        fig = px.scatter(df, x='Pressure(in)', y='Humidity(%)')
+        fig.update_layout(xaxis_title='Atmospheric Pressure (in)', yaxis_title='Humidity (%)')
+        fig.update_traces(marker=dict(color='rgba(0,0,0,0)'))
+        fig.update_layout(barmode='overlay')
+        fig.add_trace(px.bar(df, x='Pressure(in)').data[0])
+        fig.add_trace(px.bar(df, y='Humidity(%)').data[0])
+        st.plotly_chart(fig, use_container_width=True)
+    
+    add_vertical_space(5)
+    
+    palette1 = px.colors.qualitative.Pastel
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        st.markdown('##### Day vs. Night Accidents')
+        fig2 = px.bar(df['Sunrise_Sunset'].value_counts(), 
+                     x=df['Sunrise_Sunset'].value_counts().index, 
+                     y=df['Sunrise_Sunset'].value_counts().values, 
+                     title='Day vs. Night Accidents', color_discrete_sequence=palette1)
+        fig2.update_layout(xaxis_title='Time of Day', yaxis_title='Number of Accidents')
+        st.plotly_chart(fig2)
+    
+    with c2:
+        try:
+            wata = pd.read_csv("US_Accident23_1000.csv")
+            st.markdown('##### Visibility vs. Severity')
+            fig3 = px.violin(wata, x='Severity', y='Visibility(mi)', 
+                           title='Visibility vs. Severity', color='Severity', 
+                           color_discrete_sequence=palette1)
+            fig3.update_layout(xaxis_title='Severity', yaxis_title='Visibility (miles)')
+            st.plotly_chart(fig3)
+        except:
+            st.info("US_Accident23_1000.csv not found for violin plot")
+    
+    add_vertical_space(5)
+    
+    c1, c2, c3 = st.columns([0.15, 0.70, 0.15])
+    with c2:
+        st.markdown("##### Kernel Density Accidents in Folium Map")
+        add_vertical_space(2)
+        map_center = [df['Start_Lat'].mean(), df['Start_Lng'].mean()]
+        map = folium.Map(location=map_center, zoom_start=5)
+        heatmap = HeatMap(list(zip(df['Start_Lat'], df['Start_Lng'])), 
+                         min_opacity=0.2, radius=15, blur=15)
+        map.add_child(heatmap)
+        folium_static(map)
+# Dashboard Page
+# def show_dashboard_page():
+#     st.markdown('<p class="main-header">📊 Accident Analysis Dashboard</p>', unsafe_allow_html=True)
+    
+#     if st.button("← Back to Home"):
+#         set_page('home')
+    
+#     st.markdown("---")
+    
+#     # Load your existing dashboard here
+#     # This is a placeholder - replace with your actual dashboard code
+#     st.info("📌 Your existing dashboard will be integrated here.")
+    
+#     st.markdown("""
+#     ### Dashboard Features:
+#     - Accident distribution by severity
+#     - Geographic heatmaps
+#     - Temporal patterns analysis
+#     - Weather impact visualization
+#     - State-wise statistics
+#     """)
+    
+#     # Example visualizations (replace with your actual dashboard)
+#     col1, col2, col3 = st.columns(3)
+    
+#     with col1:
+#         st.metric("Total Accidents", "2.8M", "+5%")
+    
+#     with col2:
+#         st.metric("Avg Severity", "2.1", "-0.2")
+    
+#     with col3:
+#         st.metric("High Severity", "22K", "+12%")
 
 # Prediction Page
 def show_prediction_page():
