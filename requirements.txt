@@ -16,3 +16,5 @@ streamlit
 streamlit-extras
 streamlit-folium
 xgboost
+mysql-connector-python
+python-dotenv

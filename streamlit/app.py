@@ -19,6 +19,7 @@ from streamlit_folium import folium_static
 from streamlit_extras.add_vertical_space import add_vertical_space
 import holidays
 us_holidays = holidays.US()
+from db_mysql_config import AccidentPredictionDB, init_db_session
 
 # Page configuration
 st.set_page_config(
@@ -800,10 +801,22 @@ def show_prediction_page():
                 distance_features = create_distance_features(distance)
                 
                 # Combine all features
+                # input_data = {
+                #     'State': state,
+                #     'Start_Lat': latitude,
+                #     'Start_Lng': longitude,
+                #     **weather_data,
+                #     **road_features,
+                #     **temporal_features,
+                #     **distance_features
+                # }
+                
+                # Combine all features
                 input_data = {
                     'State': state,
                     'Start_Lat': latitude,
                     'Start_Lng': longitude,
+                    'accident_datetime': accident_datetime,  # ← ADD THIS LINE
                     **weather_data,
                     **road_features,
                     **temporal_features,
@@ -825,6 +838,32 @@ def show_prediction_page():
                 # Get class labels in correct order
                 class_labels = model.classes_ + 1
                 prediction = class_labels[prediction_proba.argmax()]
+                
+                # ===================================================================
+                # STORE PREDICTION IN MYSQL DATABASE
+                # ===================================================================
+                try:
+                    db = st.session_state.get('db')
+                    if db and db.connection and db.connection.is_connected():
+                        # Determine data source
+                        data_source = 'Manual' if use_manual or not fetch_data else 'API'
+                        
+                        record_id = db.insert_prediction(
+                            input_data=input_data,
+                            prediction=prediction,
+                            prediction_proba=prediction_proba,
+                            data_source=data_source
+                        )
+                        
+                        if record_id:
+                            st.success(f"✅ Prediction saved to database (Record ID: {record_id})")
+                        else:
+                            st.warning("⚠️ Prediction made but not saved to database")
+                    else:
+                        st.warning("⚠️ Database connection not available. Prediction not saved.")
+                except Exception as db_error:
+                    st.warning(f"⚠️ Error saving to database: {db_error}")
+                    # Continue with displaying results even if DB save fails
 
                 severity_map = {1: "Low", 2: "Moderate", 3: "High", 4: "Severe"}
                 severity_colors = {1: "🟢", 2: "🟡", 3: "🟠", 4: "🔴"}
@@ -863,8 +902,15 @@ def show_prediction_page():
                 st.dataframe(prob_df, use_container_width=True, hide_index=True)
                 
                 # Show input summary
+                # with st.expander("📋 Input Data Summary"):
+                #     st.json(input_data)
+                
+                # Show input summary
                 with st.expander("📋 Input Data Summary"):
-                    st.json(input_data)
+                    # Remove accident_datetime before displaying (it's not JSON serializable)
+                    display_data = {k: v for k, v in input_data.items() if k != 'accident_datetime'}
+                    display_data['accident_datetime'] = accident_datetime.strftime('%Y-%m-%d %H:%M:%S')
+                    st.json(display_data)
                 
                 st.success("✅ Prediction completed successfully!")
                 
@@ -874,6 +920,7 @@ def show_prediction_page():
 
 # Main app logic
 def main():
+    init_db_session()
     # Sidebar
     with st.sidebar:
         st.image("car_logo.webp", width=100)

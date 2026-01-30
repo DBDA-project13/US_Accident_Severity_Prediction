@@ -20,7 +20,7 @@ class AccidentPredictionDB:
         """Establish connection to AWS RDS MySQL"""
         try:
             self.connection = mysql.connector.connect(
-                host=os.getenv('RDS_HOSTNAME', 'severitydb2.cdgemicqmj0e.ap-south-1.rds.amazonaws.com'),
+                host=os.getenv('RDS_HOSTNAME', 'accident-prediction-db.cdgemicqmj0e.ap-south-1.rds.amazonaws.com'),
                 port=os.getenv('RDS_PORT', '3306'),
                 database=os.getenv('RDS_DB_NAME', 'accident_predictions'),
                 user=os.getenv('RDS_USERNAME', 'admin'),
