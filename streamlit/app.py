@@ -19,7 +19,6 @@ from streamlit_folium import folium_static
 from streamlit_extras.add_vertical_space import add_vertical_space
 import holidays
 us_holidays = holidays.US()
-from db_mysql_config import AccidentPredictionDB, init_db_session
 
 # Page configuration
 st.set_page_config(
@@ -250,8 +249,8 @@ def create_temporal_features(date_time):
     features['is_rushhour'] = (7 <= date_time.hour <= 9) or (16 <= date_time.hour <= 19)
     
     # Holiday indicator (simplified)
+    # features['is_holiday'] = False  # You can enhance this with a holiday calendar
     features['is_holiday'] = date_time.date() in us_holidays
-    # You can enhance this with a holiday calendar
     
     # Time bucket
     if 6 <= date_time.hour < 12:
@@ -297,9 +296,11 @@ def create_distance_features(distance):
 
 # Home Page
 def show_home_page():
+    # st.markdown('<p class="main-header">🚗 US Accident Severity Prediction System</p>', unsafe_allow_html=True)
+    # st.markdown('<p class="sub-header">Predict accident severity using machine learning and real-time data</p>', unsafe_allow_html=True)
     st.markdown('<H1><p class="main-header">🚗 US Accident Severity Prediction System</p></H1>', unsafe_allow_html=True)
     st.markdown('<H3><p class="sub-header">Predict accident severity using machine learning and real-time data</p></H3>', unsafe_allow_html=True)
-    
+
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
@@ -631,8 +632,9 @@ def get_state_abbreviation(state_name):
     return state_map.get(state_name, None)
 # Prediction Page
 def show_prediction_page():
-    st.markdown('<div style="text-align: center;"><h1>🔮 Accident Severity Prediction</h1></div>', unsafe_allow_html=True)
-    
+    # st.markdown('<p class="main-header">🔮 Accident Severity Prediction</p>', unsafe_allow_html=True)
+    st.markdown('<div style="text-align: center;"><h1> Accident Severity Prediction</h1></div>', unsafe_allow_html=True)
+
     if st.button("← Back to Home"):
         set_page('home')
     
@@ -654,28 +656,35 @@ def show_prediction_page():
         st.subheader("📍 Location Information")
         latitude = st.number_input("Latitude", value=34.0522, min_value=24.0, max_value=50.0, step=0.0001, format="%.4f")
         longitude = st.number_input("Longitude", value=-118.2437, min_value=-125.0, max_value=-66.0, step=0.0001, format="%.4f")
-        
+
         # Display the map
         st.markdown("**Location Preview:**")
         m = folium.Map(location=[latitude, longitude], zoom_start=13)
-        
+
+        # Function to update coordinates based on a click
+        def update_coordinates(click):
+            global latitude, longitude
+            latitude, longitude = click['lat'], click['lng']
+            st.session_state['latitude'] = latitude
+            st.session_state['longitude'] = longitude
+
         # Initial marker
         marker = folium.Marker([latitude, longitude], popup="Accident Location", icon=folium.Icon(color='red'))
         marker.add_to(m)
-        
+
         # Add LatLngPopup to show coordinates on click
         latlng_popup = folium.LatLngPopup().add_to(m)
-        
+
         # Use Streamlit callback to handle the interaction
         map_data = st_folium(m, width=350, height=300)
-        
-        if map_data and 'last_clicked' in map_data and map_data['last_clicked']:
-            latitude = map_data['last_clicked']['lat']
-            longitude = map_data['last_clicked']['lng']
-        
+        # st.markdown(type(latlng_popup))
+
+        if map_data and 'lat' in map_data and 'lng' in map_data:
+            update_coordinates(map_data)
+
         # Update state based on coordinates
         state = get_state_from_coords(lat=latitude, lon=longitude)
-        
+
         # Display the updated state
         st.markdown(f"**Selected State:** {state}")
         
@@ -684,21 +693,33 @@ def show_prediction_page():
     with col2:
         st.subheader("🕐 Time Information")
         
-        accident_date = st.date_input("Accident Date", value=datetime.now())
-        accident_time = st.time_input("Accident Time", value=datetime.now().time())
+        # accident_date = st.date_input("Accident Date", value=datetime.now())
+        # accident_time = st.time_input("Accident Time", value=datetime.now().time())
         
+        if "accident_date" not in st.session_state: st.session_state.accident_date = datetime.now() 
+        if "accident_time" not in st.session_state: st.session_state.accident_time = datetime.now().time()
+        # accident_date = st.date_input("Accident Date", value=datetime.now())
+        # accident_time = st.time_input("Accident Time", value=datetime.now().time())
+        accident_date = st.date_input("Accident Date", value=st.session_state.accident_date) 
+        accident_time = st.time_input("Accident Time", value=st.session_state.accident_time)
+        
+        st.session_state.accident_date = accident_date 
+        st.session_state.accident_time = accident_time
         # Combine date and time
         accident_datetime = datetime.combine(accident_date, accident_time)
+        
         st.markdown(f"**Selected DateTime:** {accident_datetime.strftime('%Y-%m-%d %H:%M:%S')}")
-    
-    st.markdown("---")
-    st.subheader("🌦️ Weather & Road Features")
-    fetch_data = st.checkbox("Fetch real-time data from APIs", value=True)
-    
-    if fetch_data:
-        st.info("Weather data will be fetched from NOAA API and road features from OpenStreetMap API when you click Predict.")
-    else:
-        st.warning("You will need to enter weather and road features manually.")
+        
+        st.markdown("---")
+        
+        st.subheader("🌦️ Weather & Road Features")
+        
+        fetch_data = st.checkbox("Fetch real-time data from APIs", value=True)
+        
+        if fetch_data:
+            st.info("Weather data will be fetched from NOAA API and road features from OpenStreetMap API when you click Predict.")
+        else:
+            st.warning("You will need to enter weather and road features manually.")
     
     st.markdown("---")
     
@@ -729,6 +750,7 @@ def show_prediction_page():
     
     # Prediction button
     st.markdown("---")
+    
     col_predict, col_space = st.columns([1, 2])
     
     with col_predict:
@@ -737,11 +759,8 @@ def show_prediction_page():
     if predict_button:
         with st.spinner("Gathering data and making prediction..."):
             try:
-                # Determine data source
-                data_source = 'Manual' if use_manual or not fetch_data else 'API'
-                
                 # Fetch or use manual data
-                if fetch_data and not use_manual:
+                if fetch_data and not (st.session_state.get('use_manual', False) if 'use_manual' in st.session_state else use_manual):
                     with st.status("Fetching weather data from NOAA...", expanded=True) as status:
                         weather_data = fetch_weather_data(latitude, longitude, accident_datetime)
                         st.write("✅ Weather data retrieved")
@@ -785,7 +804,6 @@ def show_prediction_page():
                     'State': state,
                     'Start_Lat': latitude,
                     'Start_Lng': longitude,
-                    'accident_datetime': accident_datetime,  # Add this for database
                     **weather_data,
                     **road_features,
                     **temporal_features,
@@ -794,52 +812,33 @@ def show_prediction_page():
                 
                 # Create DataFrame
                 input_df = pd.DataFrame([input_data])
-                
                 # Apply preprocessing
                 X_processed = preprocessor.transform(input_df)
-                
+
                 # Predict
-                prediction_proba = model.predict_proba(X_processed)[0]
+                prediction = model.predict(X_processed)[0]
+                # class_labels = model.classes_
+
                 
+                prediction_proba = model.predict_proba(X_processed)[0]
+                prediction_proba = model.predict_proba(X_processed)[0]
                 # Get class labels in correct order
                 class_labels = model.classes_ + 1
                 prediction = class_labels[prediction_proba.argmax()]
-                
+
                 severity_map = {1: "Low", 2: "Moderate", 3: "High", 4: "Severe"}
                 severity_colors = {1: "🟢", 2: "🟡", 3: "🟠", 4: "🔴"}
-                
                 prob_df = pd.DataFrame({
                     'Severity Level': [f"{severity_map[c]} (Level {c})" for c in class_labels],
                     'Probability': [f"{p*100:.2f}%" for p in prediction_proba]
                 })
-                
-                # ===================================================================
-                # STORE PREDICTION IN MYSQL DATABASE
-                # ===================================================================
-                try:
-                    db = st.session_state.get('db')
-                    if db and db.connection and db.connection.is_connected():
-                        record_id = db.insert_prediction(
-                            input_data=input_data,
-                            prediction=prediction,
-                            prediction_proba=prediction_proba,
-                            data_source=data_source
-                        )
-                        
-                        if record_id:
-                            st.success(f"✅ Prediction saved to database (Record ID: {record_id})")
-                        else:
-                            st.warning("⚠️ Prediction made but not saved to database")
-                    else:
-                        st.warning("⚠️ Database connection not available. Prediction not saved.")
-                except Exception as db_error:
-                    st.warning(f"⚠️ Error saving to database: {db_error}")
-                    # Continue with displaying results even if DB save fails
-                
+                            
                 # Display results
                 st.markdown("---")
                 st.markdown("## 🎯 Prediction Results")
                 
+                
+                # predicted_severity = severity_map[prediction]
                 predicted_severity = prediction
                 severity_icon = severity_colors[prediction]
                 
@@ -847,303 +846,34 @@ def show_prediction_page():
                 
                 with col_res2:
                     st.markdown(f"""
-                    <div style='text-align: center; padding: 20px; 
-                         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                         border-radius: 10px; color: white;'>
-                        <h2>{severity_icon} {severity_map[predicted_severity]} Severity</h2>
-                        <p style='font-size: 18px;'>Severity Level: {prediction}</p>
+                    <div class="prediction-box" style="text-align: center;">
+                        <h1>{severity_icon} {predicted_severity} Severity</h1>
+                        <h3>Severity Level: {prediction}</h3>
                     </div>
                     """, unsafe_allow_html=True)
                 
                 # Show probabilities
                 st.markdown("### 📊 Confidence Levels")
+                
+                # prob_df = pd.DataFrame({
+                #     'Severity Level': [f"{severity_map[i]} (Level {i})" for i in range(1, 5)],
+                #     'Probability': [f"{p*100:.2f}%" for p in prediction_proba]
+                # })
+                
                 st.dataframe(prob_df, use_container_width=True, hide_index=True)
                 
                 # Show input summary
                 with st.expander("📋 Input Data Summary"):
-                    # Remove accident_datetime before displaying (it's not JSON serializable)
-                    display_data = {k: v for k, v in input_data.items() if k != 'accident_datetime'}
-                    display_data['accident_datetime'] = accident_datetime.strftime('%Y-%m-%d %H:%M:%S')
-                    st.json(display_data)
+                    st.json(input_data)
                 
                 st.success("✅ Prediction completed successfully!")
                 
             except Exception as e:
                 st.error(f"❌ Error during prediction: {str(e)}")
                 st.exception(e)
-                
-# def show_prediction_page():
-#     st.markdown('<p class="main-header">🔮 Accident Severity Prediction</p>', unsafe_allow_html=True)
-    
-#     if st.button("← Back to Home"):
-#         set_page('home')
-    
-#     st.markdown("---")
-    
-#     # Load model
-#     model, preprocessor = load_model()
-    
-#     if model is None or preprocessor is None:
-#         st.error("⚠️ Model or preprocessor not found. Please ensure model.pkl and preprocessor.pkl are available.")
-#         return
-    
-#     st.markdown("### Enter Accident Details")
-    
-#     # Create two columns for input
-#     col1, col2 = st.columns(2)
-    
-#     with col1:
-#         st.subheader("📍 Location Information")
-#         latitude = st.number_input("Latitude", value=34.0522, min_value=24.0, max_value=50.0, step=0.0001, format="%.4f")
-#         longitude = st.number_input("Longitude", value=-118.2437, min_value=-125.0, max_value=-66.0, step=0.0001, format="%.4f")
-
-#         # Display the map
-#         st.markdown("**Location Preview:**")
-#         m = folium.Map(location=[latitude, longitude], zoom_start=13)
-
-#         # Function to update coordinates based on a click
-#         def update_coordinates(click):
-#             global latitude, longitude
-#             latitude, longitude = click['lat'], click['lng']
-#             st.session_state['latitude'] = latitude
-#             st.session_state['longitude'] = longitude
-
-#         # Initial marker
-#         marker = folium.Marker([latitude, longitude], popup="Accident Location", icon=folium.Icon(color='red'))
-#         marker.add_to(m)
-
-#         # Add LatLngPopup to show coordinates on click
-#         latlng_popup = folium.LatLngPopup().add_to(m)
-
-#         # Use Streamlit callback to handle the interaction
-#         map_data = st_folium(m, width=350, height=300)
-#         # st.markdown(type(latlng_popup))
-
-#         if map_data and 'lat' in map_data and 'lng' in map_data:
-#             update_coordinates(map_data)
-
-#         # Update state based on coordinates
-#         state = get_state_from_coords(lat=latitude, lon=longitude)
-
-#         # Display the updated state
-#         st.markdown(f"**Selected State:** {state}")
-        
-#         distance = st.number_input("Distance (miles)", value=0.5, min_value=0.0, max_value=50.0, step=0.1)
-    
-#     with col2:
-#         st.subheader("🕐 Time Information")
-        
-#         if "accident_date" not in st.session_state: st.session_state.accident_date = datetime.now() 
-#         if "accident_time" not in st.session_state: st.session_state.accident_time = datetime.now().time()
-#         # accident_date = st.date_input("Accident Date", value=datetime.now())
-#         # accident_time = st.time_input("Accident Time", value=datetime.now().time())
-#         accident_date = st.date_input("Accident Date", value=st.session_state.accident_date) 
-#         accident_time = st.time_input("Accident Time", value=st.session_state.accident_time)
-        
-#         st.session_state.accident_date = accident_date 
-#         st.session_state.accident_time = accident_time
-        
-#         # Combine date and time
-#         accident_datetime = datetime.combine(accident_date, accident_time)
-        
-#         st.markdown(f"**Selected DateTime:** {accident_datetime.strftime('%Y-%m-%d %H:%M:%S')}")
-        
-#         st.markdown("---")
-        
-#         st.subheader("🌦️ Weather & Road Features")
-        
-#         fetch_data = st.checkbox("Fetch real-time data from APIs", value=True)
-        
-#         if fetch_data:
-#             st.info("Weather data will be fetched from NOAA API and road features from OpenStreetMap API when you click Predict.")
-#         else:
-#             st.warning("You will need to enter weather and road features manually.")
-    
-#     st.markdown("---")
-    
-#     # Manual input section (if APIs are disabled or for override)
-#     with st.expander("🔧 Advanced Options - Manual Input Override"):
-#         st.markdown("Override API data with manual inputs")
-        
-#         col_a, col_b = st.columns(2)
-        
-#         with col_a:
-#             manual_temp = st.number_input("Temperature (°F)", value=65.0, min_value=-20.0, max_value=120.0)
-#             manual_humidity = st.number_input("Humidity (%)", value=60.0, min_value=0.0, max_value=100.0)
-#             manual_pressure = st.number_input("Pressure (in)", value=29.92, min_value=28.0, max_value=31.0)
-#             manual_visibility = st.number_input("Visibility (mi)", value=10.0, min_value=0.0, max_value=10.0)
-#             manual_wind_speed = st.number_input("Wind Speed (mph)", value=5.0, min_value=0.0, max_value=100.0)
-        
-#         with col_b:
-#             manual_weather = st.selectbox("Weather Condition", ['Clear', 'Cloudy', 'Rain', 'Snow', 'Fog'])
-#             manual_wind_dir = st.selectbox("Wind Direction", ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'])
-            
-#             st.markdown("**Road Features:**")
-#             manual_amenity = st.checkbox("Amenity Nearby")
-#             manual_crossing = st.checkbox("Crossing")
-#             manual_junction = st.checkbox("Junction")
-#             manual_traffic_signal = st.checkbox("Traffic Signal")
-        
-#         use_manual = st.checkbox("Use manual inputs instead of API data")
-    
-#     # Prediction button
-#     st.markdown("---")
-    
-#     col_predict, col_space = st.columns([1, 2])
-    
-#     with col_predict:
-#         predict_button = st.button("🎯 Predict Severity", type="primary", use_container_width=True)
-    
-#     if predict_button:
-#         with st.spinner("Gathering data and making prediction..."):
-#             try:
-#                 # Fetch or use manual data
-#                 if fetch_data and not (st.session_state.get('use_manual', False) if 'use_manual' in st.session_state else use_manual):
-#                     with st.status("Fetching weather data from NOAA...", expanded=True) as status:
-#                         weather_data = fetch_weather_data(latitude, longitude, accident_datetime)
-#                         st.write("✅ Weather data retrieved")
-#                         status.update(label="Weather data complete!", state="complete")
-                    
-#                     with st.status("Fetching road features from OpenStreetMap...", expanded=True) as status:
-#                         road_features = fetch_road_features(latitude, longitude)
-#                         st.write("✅ Road features retrieved")
-#                         status.update(label="Road features complete!", state="complete")
-#                 else:
-#                     weather_data = {
-#                         'Temperature(F)': manual_temp,
-#                         'Humidity(%)': manual_humidity,
-#                         'Pressure(in)': manual_pressure,
-#                         'Visibility(mi)': manual_visibility,
-#                         'Wind_Speed(mph)': manual_wind_speed,
-#                         'Weather_Simple': manual_weather,
-#                         'Wind_Direction_Simple': manual_wind_dir
-#                     }
-                    
-#                     road_features = {
-#                         'Amenity': manual_amenity,
-#                         'Crossing': manual_crossing,
-#                         'Give_Way': False,
-#                         'Junction': manual_junction,
-#                         'No_Exit': False,
-#                         'Railway': False,
-#                         'Station': False,
-#                         'Stop': False,
-#                         'Traffic_Signal': manual_traffic_signal
-#                     }
-                
-#                 # Create temporal features
-#                 temporal_features = create_temporal_features(accident_datetime)
-                
-#                 # Create distance features
-#                 distance_features = create_distance_features(distance)
-                
-#                 # Combine all features
-#                 input_data = {
-#                     'State': state,
-#                     'Start_Lat': latitude,
-#                     'Start_Lng': longitude,
-#                     'accident_datetime': accident_datetime,  # ← ADD THIS LINE
-#                     **weather_data,
-#                     **road_features,
-#                     **temporal_features,
-#                     **distance_features
-#                 }
-                
-#                 # Create DataFrame
-#                 input_df = pd.DataFrame([input_data])
-#                 # Apply preprocessing
-#                 X_processed = preprocessor.transform(input_df)
-
-#                 # Predict
-#                 prediction = model.predict(X_processed)[0]
-#                 # class_labels = model.classes_
-
-                
-#                 prediction_proba = model.predict_proba(X_processed)[0]
-#                 prediction_proba = model.predict_proba(X_processed)[0]
-#                 # Get class labels in correct order
-#                 class_labels = model.classes_ + 1
-#                 prediction = class_labels[prediction_proba.argmax()]
-                
-#                 # ===================================================================
-#                 # STORE PREDICTION IN MYSQL DATABASE
-#                 # ===================================================================
-#                 try:
-#                     db = st.session_state.get('db')
-#                     if db and db.connection and db.connection.is_connected():
-#                         # Determine data source
-#                         data_source = 'Manual' if use_manual or not fetch_data else 'API'
-                        
-#                         record_id = db.insert_prediction(
-#                             input_data=input_data,
-#                             prediction=prediction,
-#                             prediction_proba=prediction_proba,
-#                             data_source=data_source
-#                         )
-                        
-#                         if record_id:
-#                             st.success(f"✅ Prediction saved to database (Record ID: {record_id})")
-#                         else:
-#                             st.warning("⚠️ Prediction made but not saved to database")
-#                     else:
-#                         st.warning("⚠️ Database connection not available. Prediction not saved.")
-#                 except Exception as db_error:
-#                     st.warning(f"⚠️ Error saving to database: {db_error}")
-#                     # Continue with displaying results even if DB save fails
-
-#                 severity_map = {1: "Low", 2: "Moderate", 3: "High", 4: "Severe"}
-#                 severity_colors = {1: "🟢", 2: "🟡", 3: "🟠", 4: "🔴"}
-#                 prob_df = pd.DataFrame({
-#                     'Severity Level': [f"{severity_map[c]} (Level {c})" for c in class_labels],
-#                     'Probability': [f"{p*100:.2f}%" for p in prediction_proba]
-#                 })
-                            
-#                 # Display results
-#                 st.markdown("---")
-#                 st.markdown("## 🎯 Prediction Results")
-                
-                
-#                 # predicted_severity = severity_map[prediction]
-#                 predicted_severity = prediction
-#                 severity_icon = severity_colors[prediction]
-                
-#                 col_res1, col_res2, col_res3 = st.columns([1, 2, 1])
-                
-#                 with col_res2:
-#                     st.markdown(f"""
-#                     <div class="prediction-box" style="text-align: center;">
-#                         <h1>{severity_icon} {predicted_severity} Severity</h1>
-#                         <h3>Severity Level: {prediction}</h3>
-#                     </div>
-#                     """, unsafe_allow_html=True)
-                
-#                 # Show probabilities
-#                 st.markdown("### 📊 Confidence Levels")
-                
-#                 # prob_df = pd.DataFrame({
-#                 #     'Severity Level': [f"{severity_map[i]} (Level {i})" for i in range(1, 5)],
-#                 #     'Probability': [f"{p*100:.2f}%" for p in prediction_proba]
-#                 # })
-                
-#                 st.dataframe(prob_df, use_container_width=True, hide_index=True)
-                
-#                 # Show input summary
-#                 # Show input summary
-#                 with st.expander("📋 Input Data Summary"):
-#                     # Remove accident_datetime before displaying (it's not JSON serializable)
-#                     display_data = {k: v for k, v in input_data.items() if k != 'accident_datetime'}
-#                     display_data['accident_datetime'] = accident_datetime.strftime('%Y-%m-%d %H:%M:%S')
-#                     st.json(display_data)
-                
-#                 st.success("✅ Prediction completed successfully!")
-                
-#             except Exception as e:
-#                 st.error(f"❌ Error during prediction: {str(e)}")
-#                 st.exception(e)
 
 # Main app logic
 def main():
-    init_db_session()
     # Sidebar
     with st.sidebar:
         st.image("car_logo.webp", width=100)
@@ -1177,7 +907,7 @@ def main():
         """)
         
         st.markdown("---")
-        st.markdown("Made with ❤️ using Streamlit")
+        st.markdown("Made with steamlit")
     
     # Route to appropriate page
     if st.session_state.page == 'home':
