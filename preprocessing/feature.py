@@ -1,6 +1,8 @@
 import numpy as np # type: ignore
 import pandas as pd # type: ignore
+import holidays
 
+us_holidays = holidays.US()
 # Feature Engineering
 def simplify_weather(cond: str) -> str:
     """
@@ -103,3 +105,6 @@ def is_rushhour(hour):
         return True
     else:
         return False
+    
+def is_holiday(date):
+    return date in us_holidays

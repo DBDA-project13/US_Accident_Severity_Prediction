@@ -1,4 +1,5 @@
 folium
+holidays
 imbalanced-learn
 joblib
 lightgbm
@@ -15,3 +16,5 @@ streamlit
 streamlit-extras
 streamlit-folium
 xgboost
+mysql-connector-python
+python-dotenv
