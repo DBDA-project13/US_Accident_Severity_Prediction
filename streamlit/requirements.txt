@@ -25,6 +25,8 @@ pytest
 requests
 scikit-learn
 seaborn
+mysql-connector-python
+python-dotenv
 streamlit
 streamlit-extras
 streamlit-folium
