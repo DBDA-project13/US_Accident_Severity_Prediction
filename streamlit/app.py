@@ -970,12 +970,10 @@ def show_prediction_page():
     
     with col2:
         st.subheader("🕐 Time Information")
-        # accident_date = st.date_input("Accident Date", value=datetime.now())
-        # accident_time = st.time_input("Accident Time", value=datetime.now().time())
         if "accident_date" not in st.session_state: st.session_state.accident_date = datetime.now() 
         if "accident_time" not in st.session_state: st.session_state.accident_time = datetime.now().time()
-        accident_date = st.date_input("Accident Date", value=datetime.now())
-        accident_time = st.time_input("Accident Time", value=datetime.now().time())
+        # accident_date = st.date_input("Accident Date", value=datetime.now())
+        # accident_time = st.time_input("Accident Time", value=datetime.now().time())
         accident_date = st.date_input("Accident Date", value=st.session_state.accident_date) 
         accident_time = st.time_input("Accident Time", value=st.session_state.accident_time)
         
