@@ -1,26 +1,35 @@
 import numpy as np # type: ignore
 import pandas as pd # type: ignore
-import holidays
 
-us_holidays = holidays.US()
 # Feature Engineering
 def simplify_weather(cond: str) -> str:
     """
-    Map raw weather description to a smaller set of categories.
-    This reduces the sparsity of Weather_Condition.
+    Map raw weather description to simplified categories.
     """
     cond = str(cond).lower()
 
-    if "snow" in cond:
+    if "snow" in cond or "blowing snow" in cond or "drifting snow" in cond:
         return "snow"
-    if "rain" in cond or "storm" in cond or "thunder" in cond or "drizzle" in cond:
+    if "rain" in cond or "drizzle" in cond or "shower" in cond:
         return "rain"
+    if "storm" in cond or "thunder" in cond or "t-storm" in cond:
+        return "storm"
     if "fog" in cond or "mist" in cond or "haze" in cond:
         return "fog"
     if "cloud" in cond or "overcast" in cond:
         return "cloudy"
     if "clear" in cond or "fair" in cond:
         return "clear"
+    if "hail" in cond or "ice pellet" in cond:
+        return "hail"
+    if "sleet" in cond or "freezing rain" in cond or "freezing drizzle" in cond:
+        return "sleet"
+    if "dust" in cond or "sand" in cond or "ash" in cond:
+        return "dust/sand"
+    if "smoke" in cond:
+        return "smoke"
+    if "tornado" in cond or "funnel" in cond:
+        return "tornado"
     return "other"
 
 def hour_to_time_bucket(hour):
@@ -67,19 +76,19 @@ def wind_direction_mapping(direction: str) -> str:
     Map wind direction to a standardized set of values.
     """
     direction = str(direction).upper()
-    if direction in ['N', 'NNE', 'NNW']:
+    if direction in ['N', 'NNE', 'NNW', 'NORTH']:
         return 'N'
-    elif direction in ['S', 'SSE', 'SSW']:
+    elif direction in ['S', 'SSE', 'SSW', 'SOUTH']:
         return 'S'
-    elif direction in ['E', 'ENE', 'ESE']:
+    elif direction in ['E', 'ENE', 'ESE', 'EAST']:
         return 'E'
-    elif direction in ['W', 'WNW', 'WSW']:
+    elif direction in ['W', 'WNW', 'WSW', 'WEST']:
         return 'W'
     elif direction in ['NE', 'SE', 'SW', 'NW']:
         return direction
-    elif "CALM" in direction:
+    elif direction in ['CALM']:
         return 'CALM'
-    elif "VAR" in direction:
+    elif direction in ['VARIABLE', 'VAR']:
         return 'VAR'
     else:
         return 'MISSING'
@@ -105,6 +114,3 @@ def is_rushhour(hour):
         return True
     else:
         return False
-    
-def is_holiday(date):
-    return date in us_holidays
